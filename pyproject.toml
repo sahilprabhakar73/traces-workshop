@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "gps-traces-workspace"
+version = "0.1.0"
+description = ""
+authors = ["sahilprabhakar73 <sahilprabhakar73@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+argparse = "^1.4.0"
+requests = "^2.32.3"
+overpass = "^0.7.2"
+attrs = "^24.2.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+download_gps_traces="gps_traces_workspace.download_request_gps_traces:main"
+

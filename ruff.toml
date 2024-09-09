@@ -1,0 +1,18 @@
+# ruff configuration
+lint.select = [
+    "I", # Import Sorting
+    "UP",  # pyupgrade checks
+    "F",
+    "W",
+    "E"
+
+    # can also select ALL
+]
+
+# import sorting configuration
+lint.isort.force-sort-within-sections = true
+lint.ignore = ["E501"] # ignores the line-length 
+
+
+# formatting configuration
+# line-length = 88
