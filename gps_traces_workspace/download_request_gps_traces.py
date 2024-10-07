@@ -1,7 +1,10 @@
 import argparse
+from pathlib import Path
 from typing import NamedTuple
-import xml.etree.ElementTree as ElementTree
+
 import requests
+
+from .gpx_parser import GPXFile
 
 
 class BoundingBox(NamedTuple):
@@ -23,40 +26,87 @@ def parse_arguments():
         "--right", type=float, help="Right coordinate of the BoundingBox"
     )
     parser.add_argument("--top", type=float, help="Top coordinate of the BoundingBox")
+    parser.add_argument(
+        "--concatenate",
+        type=bool,
+        help="Combines the request response into a single file till the size_limit is reached.  ",
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, help="output directory for gpx files"
+    )
 
     args = parser.parse_args()
 
-    if not all([args.left, args.bottom, args.right, args.top]):
+    if not all([args.left, args.bottom, args.right, args.top, args.output_dir]):
         parser.error("Please provide all BoundingBox coordinates")
 
-    return BoundingBox(
-        left=args.left, bottom=args.bottom, right=args.right, top=args.top
-    )
+    return args
 
 
-def request_to_download_gps_traces(bounding_box: BoundingBox):
+def download_gps_traces(
+    bounding_box: BoundingBox,
+    output_dir: Path,
+    concatenate_response: bool,
+    max_pages: int = 5,
+    max_failure_count: int = 3,
+):
     url = "https://api.openstreetmap.org/api/0.6/trackpoints?bbox={left},{bottom},{right},{top}&page={page_number}"
-    response = requests.get(
-        url=url.format(
-            left=bounding_box.left,
-            bottom=bounding_box.bottom,
-            right=bounding_box.right,
-            top=bounding_box.top,
-            page_number=0,
-        )
-    )
-    if response.status_code == 200:
-        data = response.content
-        print(data)
-    else:
-        print(f"Failed to retrieve data: {response.status_code}")
+    current_failure_count = 0
+    page_number = 0
 
+    while True:
+        try:
+            if page_number > max_pages:
+                print(f"Reached the page limit: {page_number}")
+                break
 
-def parse_gpx_file(data):
-    root = ElementTree.fromstring(data)
-    
+            response = requests.get(
+                url=url.format(
+                    left=bounding_box.left,
+                    bottom=bounding_box.bottom,
+                    right=bounding_box.right,
+                    top=bounding_box.top,
+                    page_number=page_number,
+                )
+            )
+
+            if response.status_code == 200:
+                GPXFile.save_to_file(
+                    raw_data=response.content,
+                    filename=f"test_gpx_file_{page_number}.gpx",
+                    output_directory=output_dir,
+                )
+                page_number += 1
+            else:
+                current_failure_count += 1
+                print(
+                    f"Error on page {page_number}: Status code {response.status_code}"
+                )
+
+                if current_failure_count >= max_failure_count:
+                    print(
+                        f"Stopping due to {current_failure_count} consecutive errors."
+                    )
+                    break
+
+        except requests.exceptions.RequestException as e:
+            current_failure_count += 1
+            print(
+                f"Failed to fetch page {page_number}, Status code: {response.status_code} and Error: {e}"
+            )
+
+            if current_failure_count >= max_failure_count:
+                print(f"Stopping due to {current_failure_count} consecutive errors.")
+                break
 
 
 def main():
-    bounding_box = parse_arguments()
-    request_to_download_gps_traces(bounding_box=bounding_box)
+    args = parse_arguments()
+
+    download_gps_traces(
+        bounding_box=BoundingBox(
+            left=args.left, bottom=args.bottom, right=args.right, top=args.top
+        ),
+        output_dir=args.output_dir,
+        concatenate_response=True,
+    )
