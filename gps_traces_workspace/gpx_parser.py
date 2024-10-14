@@ -34,6 +34,18 @@ class Trackpoint:
             else None,
         )
 
+    def __getitem__(self, index: int) -> float:
+        if index == 0:
+            return self.lat
+        elif index == 1:
+            return self.lon
+        elif index == 2:
+            if self.ele is None:
+                raise IndexError("Elevation is not available")
+            return self.ele
+        else:
+            raise IndexError("Index out of range")
+
 
 @define
 class TrackSegment:
