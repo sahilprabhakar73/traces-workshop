@@ -1,6 +1,5 @@
 import math
 
-
 """
 Score based filtering based on the exponential decay function. This drastically decreases the score for the segment with low number of points and are of small duration. The scoring function could be further extended to factor in speed or other available or computed parameters as well.
 

@@ -1,17 +1,10 @@
 import argparse
 from pathlib import Path
-from typing import NamedTuple
 
 import requests
 
 from .gpx_parser import GPXFile
-
-
-class BoundingBox(NamedTuple):
-    left: float
-    bottom: float
-    right: float
-    top: float
+from .utils import BoundingBox
 
 
 def parse_arguments():
@@ -47,12 +40,12 @@ def download_gps_traces(
     bounding_box: BoundingBox,
     output_dir: Path,
     concatenate_response: bool,
-    max_pages: int = 5,
+    max_pages: int = 10,
     max_failure_count: int = 3,
 ):
     url = "https://api.openstreetmap.org/api/0.6/trackpoints?bbox={left},{bottom},{right},{top}&page={page_number}"
     current_failure_count = 0
-    page_number = 0
+    page_number = 1
 
     while True:
         try:
@@ -73,7 +66,8 @@ def download_gps_traces(
             if response.status_code == 200:
                 GPXFile.save_to_file(
                     raw_data=response.content,
-                    filename=f"test_gpx_file_{page_number}.gpx",
+                    bounding_box=bounding_box,
+                    filename=f"test_gpx_updated_{page_number}.gpx",
                     output_directory=output_dir,
                 )
                 page_number += 1
